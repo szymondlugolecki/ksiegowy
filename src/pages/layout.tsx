@@ -18,8 +18,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { HomeIcon, LayoutDashboard, Menu, Settings } from "lucide-react";
-import { Sidebar } from "./(components)/sidebar";
-import { SidebarSheet } from "./(components)/sidebar-sheet";
+import Sidebar from "../components/layout/sidebar";
+import SidebarSheet from "../components/layout/sidebar-sheet";
 
 export default function RootLayout({
   children,

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/table";
 import { HomeIcon, LayoutDashboard, Menu, Settings } from "lucide-react";
 
-export const SidebarSheet = () => {
+const SidebarSheet = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -92,6 +92,8 @@ export const SidebarSheet = () => {
     </Sheet>
   );
 };
+
+export default SidebarSheet;
 
 function BarChartIcon(props) {
   return (

@@ -7,7 +7,7 @@ const formattedTotal = Intl.NumberFormat("pl", {
   currency: "PLN",
 }).format(monthlyTotal);
 
-export const MonthlyExpensesCard = () => {
+const MonthlyExpensesCard = () => {
   return (
     <Card className="w-full max-w-5xl">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -23,3 +23,5 @@ export const MonthlyExpensesCard = () => {
     </Card>
   );
 };
+
+export default MonthlyExpensesCard;

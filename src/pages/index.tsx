@@ -9,12 +9,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { PlusIcon } from "lucide-react";
-import { MonthlyExpensesCard } from "./(components)/monthly-expenses-card";
-import { DateTooltip } from "./(components)/date-tooltip";
-
-const now = new Date();
+import MonthlyExpensesCard from "../components/monthly-expenses-card";
+import DateTooltip from "../components/tables/date-tooltip";
 
 export default function HomePage() {
+  const now = new Date();
+  console.log(now);
+
   return (
     <main className="flex flex-col flex-1 items-start sm:px-6 sm:py-0 gap-y-4">
       <MonthlyExpensesCard />

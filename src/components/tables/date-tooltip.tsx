@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export const DateTooltip = ({ date }: { date: Date }) => {
+export default function DateTooltip({ date }: { date: Date }) {
   const shortDate = date.toLocaleDateString("pl", {
     day: "numeric",
     month: "long",
@@ -34,4 +34,4 @@ export const DateTooltip = ({ date }: { date: Date }) => {
       </Tooltip>
     </TooltipProvider>
   );
-};
+}
