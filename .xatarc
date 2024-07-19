@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://majin_xyz-s-workspace-lb8gel.eu-central-1.xata.sh/db/ksiegowy",
+  "codegen": {
+    "output": "src/lib/db/xata.ts"
+  }
+}
