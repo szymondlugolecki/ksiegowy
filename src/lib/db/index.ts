@@ -1,8 +1,24 @@
-import { drizzle } from "drizzle-orm/xata-http";
-import { eq } from "drizzle-orm";
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { getXataClient } from "./xata";
+import { config } from "dotenv";
+config({ path: ".env.local" });
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-const xata = getXataClient();
+import * as households from "./tables/households";
+import * as expenses from "./tables/expenses";
+import * as users from "./tables/profiles";
 
-export const db = drizzle(xata);
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+// Disable prefetch as it is not supported for "Transaction" pool mode
+export const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client, {
+  schema: {
+    ...households,
+    ...expenses,
+    ...users,
+  },
+});
