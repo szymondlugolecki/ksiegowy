@@ -37,6 +37,7 @@
     "drizzle-zod": "^0.5.1",
     "lucia": "^3.2.0",
     "lucide-react": "^0.411.0",
+    "nanoid": "^5.0.7",
     "next": "latest",
     "next-themes": "^0.3.0",
     "react": "^18.2.0",

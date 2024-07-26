@@ -13,7 +13,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { householdsTable } from "./households";
+import { householdsTable, members } from "./households";
 import { expensesTable } from "./expenses";
 
 export const roles = ["user", "admin"] as const;
@@ -36,9 +36,16 @@ export const profilesTable = pgTable("profiles", {
   avatarURL: varchar("avatar_url").notNull(),
   role: varchar("role", { enum: roles }).notNull().default("user"),
 
-  householdId: uuid("household_id")
-    .notNull()
-    .references(() => householdsTable.id, { onDelete: "cascade" }),
+  // Multiple households per user:
+  mainHouseholdId: uuid("main_household_id").references(
+    () => householdsTable.id,
+    { onDelete: "cascade" }
+  ),
+
+  // Single household per user:
+  // householdId: uuid("household_id")
+  //   .notNull()
+  //   .references(() => householdsTable.id, { onDelete: "cascade" }),
 
   // Timestamps
   // updatedAt: timestamp("updated_at", {
@@ -56,20 +63,23 @@ export const profilesTable = pgTable("profiles", {
 });
 
 export const profilesRelations = relations(profilesTable, ({ one, many }) => ({
-  household: one(householdsTable, {
-    fields: [profilesTable.householdId],
-    references: [householdsTable.id],
-  }),
+  ownedHouseholds: many(householdsTable),
   expenses: many(expensesTable),
 
-  // Multiple households per user:
-  // profilesToHouseholds: many(profilesToHouseholds, {
-  //   relationName: "profiles_to_households",
+  // Single household per user:
+  // household: one(householdsTable, {
+  //   fields: [profilesTable.householdId],
+  //   references: [householdsTable.id],
   // }),
+
+  // Multiple households per user:
+  households: many(members, {
+    relationName: "profiles_to_households",
+  }),
 }));
 
-export const insertprofileschema = createInsertSchema(profilesTable);
-export const selectprofileschema = createSelectSchema(profilesTable);
+export const insertProfileSchema = createInsertSchema(profilesTable);
+export const selectProfileSchema = createSelectSchema(profilesTable);
 
 export type SelectUser = InferSelectModel<typeof profilesTable>;
 export type InsertUser = InferInsertModel<typeof profilesTable>;

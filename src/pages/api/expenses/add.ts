@@ -1,9 +1,6 @@
 import { db } from "@/lib/db";
-import {
-  addExpenseFormSchema,
-  expensesTable,
-  InsertExpense,
-} from "@/lib/db/tables/expenses";
+import { expensesTable, InsertExpense } from "@/lib/db/tables/expenses";
+import { addExpenseFormSchema } from "@/lib/schemas/expenses";
 import createClient from "@/lib/supabase/api";
 import { ApiResponse } from "@/lib/types";
 import { trytm } from "@/lib/utils";

@@ -1,5 +1,5 @@
 {
-  "id": "93e3a918-6af8-4df6-8fca-c44e3ea79e12",
+  "id": "0caa9356-8305-4d89-8188-d1f0c9af9a0c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -102,6 +102,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "invitation_code": {
+          "name": "invitation_code",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
         "owner_id": {
           "name": "owner_id",
           "type": "uuid",
@@ -117,13 +123,48 @@
         }
       },
       "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.profiles_to_households": {
+      "name": "profiles_to_households",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "household_id": {
+          "name": "household_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
       "foreignKeys": {
-        "households_owner_id_profiles_id_fk": {
-          "name": "households_owner_id_profiles_id_fk",
-          "tableFrom": "households",
+        "profiles_to_households_user_id_profiles_id_fk": {
+          "name": "profiles_to_households_user_id_profiles_id_fk",
+          "tableFrom": "profiles_to_households",
           "tableTo": "profiles",
           "columnsFrom": [
-            "owner_id"
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "profiles_to_households_household_id_households_id_fk": {
+          "name": "profiles_to_households_household_id_households_id_fk",
+          "tableFrom": "profiles_to_households",
+          "tableTo": "households",
+          "columnsFrom": [
+            "household_id"
           ],
           "columnsTo": [
             "id"
@@ -132,7 +173,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "profiles_to_households_user_id_household_id_pk": {
+          "name": "profiles_to_households_user_id_household_id_pk",
+          "columns": [
+            "user_id",
+            "household_id"
+          ]
+        }
+      },
       "uniqueConstraints": {}
     },
     "public.profiles": {
@@ -170,11 +219,11 @@
           "notNull": true,
           "default": "'user'"
         },
-        "household_id": {
-          "name": "household_id",
+        "main_household_id": {
+          "name": "main_household_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -205,12 +254,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "profiles_household_id_households_id_fk": {
-          "name": "profiles_household_id_households_id_fk",
+        "profiles_main_household_id_households_id_fk": {
+          "name": "profiles_main_household_id_households_id_fk",
           "tableFrom": "profiles",
           "tableTo": "households",
           "columnsFrom": [
-            "household_id"
+            "main_household_id"
           ],
           "columnsTo": [
             "id"

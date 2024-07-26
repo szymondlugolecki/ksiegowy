@@ -12,14 +12,18 @@ import {
 import { profilesTable } from "./profiles";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { expensesTable } from "./expenses";
+import { nanoid } from "nanoid";
 
 export const householdsTable = pgTable("households", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name").notNull(),
 
-  ownerId: uuid("owner_id")
+  invitationCode: varchar("invitation_code")
     .notNull()
-    .references(() => profilesTable.id, { onDelete: "cascade" }),
+    .$defaultFn(() => nanoid(10)),
+
+  ownerId: uuid("owner_id").notNull(),
+  // .references(() => profilesTable.id, { onDelete: "cascade" }),
 
   // Timestamps
   createdAt: timestamp("created_at", {
@@ -28,48 +32,59 @@ export const householdsTable = pgTable("households", {
   }).defaultNow(),
 });
 
-export const householdsRelations = relations(householdsTable, ({ many }) => ({
-  members: many(profilesTable),
-  expenses: many(expensesTable),
+export const householdsRelations = relations(
+  householdsTable,
+  ({ one, many }) => ({
+    owner: one(profilesTable, {
+      fields: [householdsTable.ownerId],
+      references: [profilesTable.id],
+    }),
+    expenses: many(expensesTable),
+    // Single household per user:
+    // members: many(profilesTable),
 
-  // Multiple households per user:
-  // profilesToHouseholds: many(profilesToHouseholds, {
-  //   relationName: "profiles_to_households",
-  // }),
-}));
+    // Multiple households per user:
+    members: many(members, {
+      relationName: "profiles_to_households",
+    }),
+  })
+);
 
 // Multiple households per user:
-// export const profilesToHouseholds = pgTable(
-//   "profiles_to_households",
-//   {
-//     userId: uuid("user_id")
-//       .notNull()
-//       .references(() => profilesTable.id, { onDelete: "cascade" }),
-//     householdId: uuid("household_id")
-//       .notNull()
-//       .references(() => householdsTable.id, { onDelete: "cascade" }),
-//   },
-//   (t) => ({
-//     pk: primaryKey({ columns: [t.userId, t.householdId] }),
-//   })
-// );
+export const members = pgTable(
+  "members",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profilesTable.id, { onDelete: "cascade" }),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => householdsTable.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.householdId] }),
+  })
+);
 
-// export const profilesToHouseholdsRelations = relations(
-//   profilesToHouseholds,
-//   ({ one }) => ({
-//     household: one(householdsTable, {
-//       fields: [profilesToHouseholds.householdId],
-//       references: [householdsTable.id],
-//     }),
-//     profile: one(profilesTable, {
-//       fields: [profilesToHouseholds.userId],
-//       references: [profilesTable.id],
-//     }),
-//   })
-// );
+export const membersRelations = relations(members, ({ one }) => ({
+  household: one(householdsTable, {
+    fields: [members.householdId],
+    references: [householdsTable.id],
+  }),
+  profile: one(profilesTable, {
+    fields: [members.userId],
+    references: [profilesTable.id],
+  }),
+}));
 
 export const insertHouseholdSchema = createInsertSchema(householdsTable);
 export const selectHouseholdSchema = createSelectSchema(householdsTable);
 
 export type SelectHousehold = InferSelectModel<typeof householdsTable>;
 export type InsertHousehold = InferInsertModel<typeof householdsTable>;
+
+export const insertHouseholdUserSchema = createInsertSchema(members);
+export const selectHouseholdUserSchema = createSelectSchema(members);
+
+export type SelectHouseholdUser = InferSelectModel<typeof members>;
+export type InsertHouseholdUser = InferInsertModel<typeof members>;

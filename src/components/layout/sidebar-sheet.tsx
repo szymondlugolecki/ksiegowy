@@ -34,13 +34,13 @@ import {
 } from "@/components/ui/table";
 import { HomeIcon, LayoutDashboard, Menu, Settings } from "lucide-react";
 
-const SidebarSheet = () => {
+export default function SidebarSheet() {
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button size="icon" variant="outline" className="sm:hidden">
-          {/* <MenuIcon className="h-5 w-5" /> */}
-          <Menu className="h-5 w-5" />
+          {/* <MenuIcon className="w-5 h-5" /> */}
+          <Menu className="w-5 h-5" />
           <span className="sr-only">Włącz menu</span>
         </Button>
       </SheetTrigger>
@@ -48,10 +48,10 @@ const SidebarSheet = () => {
         <nav className="grid gap-6 text-lg font-medium">
           {/* <Link
             href="#"
-            className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+            className="flex items-center justify-center w-10 h-10 gap-2 text-lg font-semibold rounded-full group shrink-0 bg-primary text-primary-foreground md:text-base"
             prefetch={false}
           >
-            <HomeIcon className="h-5 w-5 transition-all group-hover:scale-110" />
+            <HomeIcon className="w-5 h-5 transition-all group-hover:scale-110" />
             <span className="sr-only">Family Expenses</span>
           </Link> */}
           <Link
@@ -59,8 +59,8 @@ const SidebarSheet = () => {
             className="flex items-center gap-4 px-2.5 text-foreground"
             prefetch={false}
           >
-            {/* <LayoutDashboardIcon className="h-5 w-5" /> */}
-            <LayoutDashboard className="h-5 w-5" />
+            {/* <LayoutDashboardIcon className="w-5 h-5" /> */}
+            <LayoutDashboard className="w-5 h-5" />
             Panel
           </Link>
           <Link
@@ -68,7 +68,7 @@ const SidebarSheet = () => {
             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             prefetch={false}
           >
-            <BarChartIcon className="h-5 w-5" />
+            <BarChartIcon className="w-5 h-5" />
             Statystyki
           </Link>
           <Link
@@ -76,7 +76,7 @@ const SidebarSheet = () => {
             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
             prefetch={false}
           >
-            <HomeIcon className="h-5 w-5" />
+            <HomeIcon className="w-5 h-5" />
             Moje Domostwo
           </Link>
           {/* <Link
@@ -84,16 +84,14 @@ const SidebarSheet = () => {
               className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
               prefetch={false}
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="w-5 h-5" />
               Settings
             </Link> */}
         </nav>
       </SheetContent>
     </Sheet>
   );
-};
-
-export default SidebarSheet;
+}
 
 function BarChartIcon(props) {
   return (

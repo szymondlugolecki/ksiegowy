@@ -14,13 +14,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  addExpenseFormSchema,
-  type AddExpenseForm,
-} from "@/lib/db/tables/expenses";
+
 import RequiredAsterisk from "@/components/required-asterisk";
 import { ApiResponse, HouseholdData } from "@/lib/types";
 import { toast } from "sonner";
+import {
+  addExpenseFormSchema,
+  type AddExpenseForm,
+} from "@/lib/schemas/expenses";
 
 export default function AddExpenseForm({
   household,

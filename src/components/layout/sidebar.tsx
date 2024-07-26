@@ -20,6 +20,8 @@ export default function Sidebar() {
             <HomeIcon className="w-4 h-4 transition-all group-hover:scale-110" />
             <span className="sr-only">Family Expenses</span>
           </Link> */}
+
+          {/* Panel */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
@@ -34,6 +36,8 @@ export default function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right">Panel</TooltipContent>
           </Tooltip>
+
+          {/* Household Stats */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
@@ -47,18 +51,20 @@ export default function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right">Statystyki</TooltipContent>
           </Tooltip>
+
+          {/* Households */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
-                href="/"
+                href="/households"
                 className="flex items-center justify-center transition-colors rounded-lg h-9 w-9 text-muted-foreground hover:text-foreground md:h-8 md:w-8"
                 prefetch={false}
               >
                 <HomeIcon className="w-5 h-5" />
-                <span className="sr-only">Moje Domostwo</span>
+                <span className="sr-only">Zarządzaj domostwami</span>
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right">Moje Domostwo</TooltipContent>
+            <TooltipContent side="right">Zarządzaj domostwami</TooltipContent>
           </Tooltip>
           {/* <Tooltip>
             <TooltipTrigger asChild>
