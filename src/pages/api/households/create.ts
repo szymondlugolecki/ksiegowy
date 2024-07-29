@@ -3,12 +3,13 @@ import {
   householdsTable,
   InsertHousehold,
   InsertHouseholdUser,
-  members,
+  profilesToHouseholdsTable,
 } from "@/lib/db/tables/households";
-import { addHouseholdFormSchema } from "@/lib/schemas/households";
+import { createHouseholdFormSchema } from "@/lib/schemas/households";
 import createClient from "@/lib/supabase/api";
 import { ApiResponse } from "@/lib/types";
 import { trytm } from "@/lib/utils";
+import { count, eq } from "drizzle-orm";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -23,7 +24,7 @@ export default async function handler(
 
   const body = JSON.parse(req.body);
 
-  const validation = addHouseholdFormSchema.safeParse(body);
+  const validation = createHouseholdFormSchema.safeParse(body);
   if (!validation.success) {
     return res
       .status(400)
@@ -38,6 +39,27 @@ export default async function handler(
     name,
     ownerId: userData.user.id,
   };
+
+  // Check if user is already a member of more than 5 households
+  const [userHouseholdsCount, countUserHouseholdsError] = await trytm(
+    db
+      .select({ count: count() })
+      .from(profilesToHouseholdsTable)
+      .where(eq(profilesToHouseholdsTable.userId, userData.user.id))
+  );
+  if (countUserHouseholdsError) {
+    console.error("countUserHouseholdsError", countUserHouseholdsError);
+    return res.status(500).json({
+      error: true,
+      message: "Błąd serwera podczas sprawdzania liczby domostw",
+    });
+  }
+  if (userHouseholdsCount && userHouseholdsCount[0].count > 5) {
+    return res.status(400).json({
+      error: true,
+      message: "Można być członkiem maksymalnie 5 domostw",
+    });
+  }
 
   const [, insertHouseholdError] = await trytm(
     db.transaction(async (txn) => {
@@ -58,9 +80,9 @@ export default async function handler(
       };
 
       const addUser = await txn
-        .insert(members)
+        .insert(profilesToHouseholdsTable)
         .values(newHouseholdUser)
-        .returning({ householdId: members.householdId });
+        .returning({ householdId: profilesToHouseholdsTable.householdId });
 
       if (!addUser || !addUser.length) {
         console.error("No user added");

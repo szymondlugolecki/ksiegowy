@@ -13,7 +13,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { householdsTable, members } from "./households";
+import { householdsTable, profilesToHouseholdsTable } from "./households";
 import { expensesTable } from "./expenses";
 
 export const roles = ["user", "admin"] as const;
@@ -63,9 +63,13 @@ export const profilesTable = pgTable("profiles", {
 });
 
 export const profilesRelations = relations(profilesTable, ({ one, many }) => ({
+  activeHousehold: one(householdsTable, {
+    fields: [profilesTable.mainHouseholdId],
+    references: [householdsTable.id],
+    relationName: "active_household",
+  }),
   ownedHouseholds: many(householdsTable),
   expenses: many(expensesTable),
-
   // Single household per user:
   // household: one(householdsTable, {
   //   fields: [profilesTable.householdId],
@@ -73,7 +77,7 @@ export const profilesRelations = relations(profilesTable, ({ one, many }) => ({
   // }),
 
   // Multiple households per user:
-  households: many(members, {
+  profilesToHouseholds: many(profilesToHouseholdsTable, {
     relationName: "profiles_to_households",
   }),
 }));

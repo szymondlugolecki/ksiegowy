@@ -10,8 +10,8 @@ import { createClient } from "@/lib/supabase/server-props";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  AddHouseholdForm,
-  addHouseholdFormSchema,
+  CreateHouseholdForm,
+  createHouseholdFormSchema,
 } from "@/lib/schemas/households";
 import { ApiResponse } from "@/lib/types";
 import { toast } from "sonner";
@@ -29,14 +29,14 @@ import { useRouter } from "next/router";
 
 export default function HouseholdCreateForm() {
   const router = useRouter();
-  const form = useForm<AddHouseholdForm>({
-    resolver: zodResolver(addHouseholdFormSchema),
+  const form = useForm<CreateHouseholdForm>({
+    resolver: zodResolver(createHouseholdFormSchema),
     defaultValues: {
       name: "",
     },
   });
 
-  async function onSubmit(values: AddHouseholdForm) {
+  async function onSubmit(values: CreateHouseholdForm) {
     console.log("sending data", values);
 
     const response = await fetch("/api/households/create", {

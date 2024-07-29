@@ -3,16 +3,16 @@ import {
   householdsTable,
   InsertHousehold,
   InsertHouseholdUser,
-  members,
+  profilesToHouseholdsTable,
 } from "@/lib/db/tables/households";
 import {
-  addHouseholdFormSchema,
+  createHouseholdFormSchema,
   joinHouseholdFormSchema,
 } from "@/lib/schemas/households";
 import createClient from "@/lib/supabase/api";
 import { ApiResponse } from "@/lib/types";
 import { trytm } from "@/lib/utils";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -38,6 +38,27 @@ export default async function handler(
     data: { code },
   } = validation;
 
+  // Check if user is already a member of more than 5 households
+  const [userHouseholdsCount, countUserHouseholdsError] = await trytm(
+    db
+      .select({ count: count() })
+      .from(profilesToHouseholdsTable)
+      .where(eq(profilesToHouseholdsTable.userId, userData.user.id))
+  );
+  if (countUserHouseholdsError) {
+    console.error("countUserHouseholdsError", countUserHouseholdsError);
+    return res.status(500).json({
+      error: true,
+      message: "Błąd serwera podczas sprawdzania liczby domostw",
+    });
+  }
+  if (userHouseholdsCount && userHouseholdsCount[0].count > 5) {
+    return res.status(400).json({
+      error: true,
+      message: "Można być członkiem maksymalnie 5 domostw",
+    });
+  }
+
   const [household, fetchHouseholdError] = await trytm(
     db.query.householdsTable.findFirst({
       where: eq(householdsTable.invitationCode, code),
@@ -46,8 +67,8 @@ export default async function handler(
         name: true,
       },
       with: {
-        members: {
-          where: eq(members.userId, userData.user.id),
+        profilesToHouseholds: {
+          where: eq(profilesToHouseholdsTable.userId, userData.user.id),
         },
       },
     })
@@ -72,7 +93,7 @@ export default async function handler(
     });
   }
 
-  if (household.members.length) {
+  if (household.profilesToHouseholds.length) {
     return res.status(400).json({
       error: true,
       message: "Jesteś już członkiem tego domostwa",
@@ -86,13 +107,16 @@ export default async function handler(
 
   const [result, insertHouseholdMemberError] = await trytm(
     db
-      .insert(members)
+      .insert(profilesToHouseholdsTable)
       .values(newHouseholdMember)
       .onConflictDoNothing({
-        target: [members.householdId, members.userId],
+        target: [
+          profilesToHouseholdsTable.householdId,
+          profilesToHouseholdsTable.userId,
+        ],
       })
       .returning({
-        userId: members.userId,
+        userId: profilesToHouseholdsTable.userId,
       })
   );
   if (insertHouseholdMemberError) {

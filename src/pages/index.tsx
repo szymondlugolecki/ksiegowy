@@ -23,7 +23,7 @@ import { createClient } from "@/lib/supabase/server-props";
 import dynamic from "next/dynamic";
 
 const AddExpenseDrawer = dynamic(
-  () => import("@/components/forms/expenses/add/drawer"),
+  () => import("@/components/households/expenses/add/drawer"),
   {
     loading: () => (
       <Button variant="outline" size="sm">
@@ -40,7 +40,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   const { data, error } = await supabase.auth.getUser();
 
-  console.log("get user", data, error);
+  // console.log("get user", data, error);
 
   if (error || !data) {
     return {

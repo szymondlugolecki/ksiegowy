@@ -1,4 +1,3 @@
-import { drizzle } from "drizzle-orm/xata-http";
 import { eq, InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
 import {
   integer,
@@ -35,6 +34,9 @@ export const householdsTable = pgTable("households", {
 export const householdsRelations = relations(
   householdsTable,
   ({ one, many }) => ({
+    usersWithActiveHousehold: many(profilesTable, {
+      relationName: "active_household",
+    }),
     owner: one(profilesTable, {
       fields: [householdsTable.ownerId],
       references: [profilesTable.id],
@@ -44,15 +46,15 @@ export const householdsRelations = relations(
     // members: many(profilesTable),
 
     // Multiple households per user:
-    members: many(members, {
+    profilesToHouseholds: many(profilesToHouseholdsTable, {
       relationName: "profiles_to_households",
     }),
   })
 );
 
 // Multiple households per user:
-export const members = pgTable(
-  "members",
+export const profilesToHouseholdsTable = pgTable(
+  "profiles_to_households",
   {
     userId: uuid("user_id")
       .notNull()
@@ -66,16 +68,19 @@ export const members = pgTable(
   })
 );
 
-export const membersRelations = relations(members, ({ one }) => ({
-  household: one(householdsTable, {
-    fields: [members.householdId],
-    references: [householdsTable.id],
-  }),
-  profile: one(profilesTable, {
-    fields: [members.userId],
-    references: [profilesTable.id],
-  }),
-}));
+export const profilesToHouseholdsRelations = relations(
+  profilesToHouseholdsTable,
+  ({ one }) => ({
+    household: one(householdsTable, {
+      fields: [profilesToHouseholdsTable.householdId],
+      references: [householdsTable.id],
+    }),
+    profile: one(profilesTable, {
+      fields: [profilesToHouseholdsTable.userId],
+      references: [profilesTable.id],
+    }),
+  })
+);
 
 export const insertHouseholdSchema = createInsertSchema(householdsTable);
 export const selectHouseholdSchema = createSelectSchema(householdsTable);
@@ -83,8 +88,16 @@ export const selectHouseholdSchema = createSelectSchema(householdsTable);
 export type SelectHousehold = InferSelectModel<typeof householdsTable>;
 export type InsertHousehold = InferInsertModel<typeof householdsTable>;
 
-export const insertHouseholdUserSchema = createInsertSchema(members);
-export const selectHouseholdUserSchema = createSelectSchema(members);
+export const insertHouseholdUserSchema = createInsertSchema(
+  profilesToHouseholdsTable
+);
+export const selectHouseholdUserSchema = createSelectSchema(
+  profilesToHouseholdsTable
+);
 
-export type SelectHouseholdUser = InferSelectModel<typeof members>;
-export type InsertHouseholdUser = InferInsertModel<typeof members>;
+export type SelectHouseholdUser = InferSelectModel<
+  typeof profilesToHouseholdsTable
+>;
+export type InsertHouseholdUser = InferInsertModel<
+  typeof profilesToHouseholdsTable
+>;

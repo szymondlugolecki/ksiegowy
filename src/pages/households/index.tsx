@@ -21,16 +21,19 @@ import {
 } from "lucide-react";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { createClient } from "@/lib/supabase/server-props";
-import HouseholdCreateForm from "@/components/forms/expenses/households/create/form";
-import HouseholdJoinForm from "@/components/forms/expenses/households/join/form";
+import HouseholdCreateForm from "@/components/households/create/form";
+import HouseholdJoinForm from "@/components/households/join/form";
 import { db } from "@/lib/db";
 import { trytm } from "@/lib/utils";
+import HouseholdList from "@/components/households/list";
+import { eq } from "drizzle-orm";
+import { profilesTable } from "@/lib/db/tables/profiles";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createClient(context);
 
   const { data, error } = await supabase.auth.getUser();
-  console.log("get user", data, error);
+  // console.log("get user", data, error);
 
   if (error || !data) {
     return {
@@ -41,27 +44,39 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
-  const [households, fetchHouseholdsError] = await trytm(
+  const [householdsRaw, fetchHouseholdsError] = await trytm(
     db.query.householdsTable.findMany({
       columns: {
         id: true,
         name: true,
         invitationCode: true,
       },
+      with: {
+        usersWithActiveHousehold: {
+          where: eq(profilesTable.id, data.user.id),
+          columns: {
+            id: true,
+          },
+        },
+      },
     })
   );
-
-  console.log("households", households);
-
   if (fetchHouseholdsError) {
     console.error("fetchHouseholdsError", fetchHouseholdsError);
     throw new Error("Błąd serwera podczas pobierania listy domostw");
   }
 
+  const households = householdsRaw.map(
+    ({ usersWithActiveHousehold, ...rest }) => ({ ...rest })
+  );
+
   return {
     props: {
       user: data.user,
       households,
+      activeHousehold: householdsRaw.find(
+        ({ usersWithActiveHousehold }) => usersWithActiveHousehold.length > 0
+      )?.id,
     },
   };
 }
@@ -69,43 +84,16 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 export default function HouseholdsPage({
   user,
   households,
+  activeHousehold,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <main className="grid items-start flex-1 gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Households List */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Domostwa</CardTitle>
-            <Button variant="outline" size="sm" className="gap-1">
-              <PlusIcon className="w-4 h-4" />
-              Stwórz domostwo
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              {households.map((household) => (
-                <div
-                  key={household.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <HomeIcon className="w-5 h-5" />
-                    <div>
-                      <div className="font-medium">{household.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {household.invitationCode}
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="secondary" className="rounded-full">
-                    Aktywuj
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <HouseholdList
+          households={households}
+          activeHousehold={activeHousehold}
+        />
 
         {/* Create Household */}
         <HouseholdCreateForm />

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const addHouseholdFormSchema = z.object({
+export const createHouseholdFormSchema = z.object({
   name: z
     .string({
       required_error: "Nazwa domostwa jest wymagana",
@@ -18,5 +18,17 @@ export const joinHouseholdFormSchema = z.object({
     .min(3, "Kod zaproszenia musi zawierać przynajmniej 3 znaki"),
 });
 
-export type AddHouseholdForm = z.infer<typeof addHouseholdFormSchema>;
+export const changeActiveHouseholdFormSchema = z.object({
+  id: z
+    .string({
+      required_error: "Id domostwa jest wymagane",
+      invalid_type_error: "Nieprawidłowe id domostwa",
+    })
+    .uuid("Nieprawidłowe id domostwa"),
+});
+
+export type CreateHouseholdForm = z.infer<typeof createHouseholdFormSchema>;
 export type JoinHouseholdForm = z.infer<typeof joinHouseholdFormSchema>;
+export type ChangeActiveHouseholdForm = z.infer<
+  typeof changeActiveHouseholdFormSchema
+>;
