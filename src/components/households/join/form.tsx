@@ -26,8 +26,13 @@ import {
 } from "@/components/ui/form";
 import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
+import { Badge } from "@/components/ui/badge";
+import { useContext } from "react";
+import { useHouseholdContext } from "../context";
 
 export default function HouseholdJoinForm() {
+  const { isLimitReached, isSubmitting, setIsSubmitting } =
+    useHouseholdContext();
   const router = useRouter();
   const form = useForm<JoinHouseholdForm>({
     resolver: zodResolver(joinHouseholdFormSchema),
@@ -36,9 +41,12 @@ export default function HouseholdJoinForm() {
     },
   });
 
+  const disabled = isSubmitting || isLimitReached;
+
   async function onSubmit(values: JoinHouseholdForm) {
     console.log("sending data", values);
 
+    setIsSubmitting(true);
     const response = await fetch("/api/households/join", {
       method: "POST",
       body: JSON.stringify(values),
@@ -46,6 +54,7 @@ export default function HouseholdJoinForm() {
 
     console.log("response", response);
     const data: ApiResponse = await response.json();
+    setIsSubmitting(false);
     console.log("data", data);
 
     if ("error" in data) {
@@ -62,6 +71,9 @@ export default function HouseholdJoinForm() {
         <CardTitle className="text-sm font-medium">
           Dołącz do domostwa
         </CardTitle>
+        {isLimitReached && (
+          <Badge variant="destructive">LIMIT DOMOSTW: 5</Badge>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -76,7 +88,7 @@ export default function HouseholdJoinForm() {
                     <RequiredAsterisk />
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={disabled} />
                   </FormControl>
                   <FormDescription>
                     Kod zaproszenia udostępniony przez członka domostwa
@@ -86,7 +98,11 @@ export default function HouseholdJoinForm() {
               )}
             />
 
-            <Button type="submit" className="justify-self-end">
+            <Button
+              disabled={disabled}
+              type="submit"
+              className="justify-self-end"
+            >
               Dołącz
             </Button>
           </form>

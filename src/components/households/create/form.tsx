@@ -26,8 +26,12 @@ import {
 } from "@/components/ui/form";
 import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
+import { Badge } from "@/components/ui/badge";
+import { useHouseholdContext } from "../context";
 
 export default function HouseholdCreateForm() {
+  const { isLimitReached, isSubmitting, setIsSubmitting } =
+    useHouseholdContext();
   const router = useRouter();
   const form = useForm<CreateHouseholdForm>({
     resolver: zodResolver(createHouseholdFormSchema),
@@ -36,16 +40,18 @@ export default function HouseholdCreateForm() {
     },
   });
 
+  const disabled = isSubmitting || isLimitReached;
+
   async function onSubmit(values: CreateHouseholdForm) {
     console.log("sending data", values);
-
+    setIsSubmitting(true);
     const response = await fetch("/api/households/create", {
       method: "POST",
       body: JSON.stringify(values),
     });
-
     console.log("response", response);
     const data: ApiResponse = await response.json();
+    setIsSubmitting(false);
     console.log("data", data);
 
     if ("error" in data) {
@@ -59,7 +65,10 @@ export default function HouseholdCreateForm() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">Nowe domostwo</CardTitle>
+        <CardTitle className="text-sm font-medium">Stwórz domostwo</CardTitle>
+        {isLimitReached && (
+          <Badge variant="destructive">LIMIT DOMOSTW: 5</Badge>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -74,7 +83,11 @@ export default function HouseholdCreateForm() {
                     <RequiredAsterisk />
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Kowalscy" {...field} />
+                    <Input
+                      placeholder="Kowalscy"
+                      disabled={disabled}
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     Nazwa domostwa, przykładowo nazwisko rodziny
@@ -84,7 +97,11 @@ export default function HouseholdCreateForm() {
               )}
             />
 
-            <Button type="submit" className="justify-self-end">
+            <Button
+              disabled={disabled}
+              type="submit"
+              className="justify-self-end"
+            >
               Stwórz
             </Button>
           </form>

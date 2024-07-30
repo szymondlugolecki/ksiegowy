@@ -15,9 +15,11 @@ export default function HouseholdList({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">Domostwa</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          Domostwa {households.length ? `(${households.length})` : ""}
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-48 overflow-y-auto">
         {households.map((household, index) => (
           <HouseholdListRow
             household={household}

@@ -26,8 +26,18 @@ import HouseholdJoinForm from "@/components/households/join/form";
 import { db } from "@/lib/db";
 import { trytm } from "@/lib/utils";
 import HouseholdList from "@/components/households/list";
-import { eq } from "drizzle-orm";
+import { eq, is } from "drizzle-orm";
 import { profilesTable } from "@/lib/db/tables/profiles";
+import { createContext, useContext, useEffect, useState } from "react";
+import { HouseholdContext } from "@/components/households/context";
+import { profilesToHouseholdsTable } from "@/lib/db/tables/households";
+import { SelectUser } from "@/lib/db/tables/profiles";
+import HouseholdMembersList from "@/components/households/members-list";
+
+export type HouseholdMember = Pick<
+  SelectUser,
+  "id" | "email" | "fullName" | "avatarURL"
+> & { createdAt: string };
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createClient(context);
@@ -50,6 +60,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
         id: true,
         name: true,
         invitationCode: true,
+        ownerId: true,
       },
       with: {
         usersWithActiveHousehold: {
@@ -66,9 +77,62 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     throw new Error("Błąd serwera podczas pobierania listy domostw");
   }
 
+  const [activeHouseholdMembersRaw, fetchActiveHouseholdMembersError] =
+    await trytm(
+      db.query.profilesTable.findMany({
+        columns: {},
+        where: eq(profilesTable.id, data.user.id),
+        with: {
+          activeHousehold: {
+            columns: {},
+            with: {
+              usersWithActiveHousehold: {
+                columns: {
+                  id: true,
+                  email: true,
+                  fullName: true,
+                  avatarURL: true,
+                  createdAt: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    );
+
+  if (fetchActiveHouseholdMembersError) {
+    console.error(
+      "fetchActiveHouseholdMembersError",
+      fetchActiveHouseholdMembersError
+    );
+    throw new Error("Błąd serwera podczas pobierania listy członków domostwa");
+  }
+
+  const x =
+    activeHouseholdMembersRaw[0].activeHousehold?.usersWithActiveHousehold[0]
+      .createdAt;
+  console.log(
+    "activeHouseholdMembersRaw",
+    activeHouseholdMembersRaw,
+    x,
+    typeof x
+  );
+
   const households = householdsRaw.map(
     ({ usersWithActiveHousehold, ...rest }) => ({ ...rest })
   );
+
+  const ownerId = householdsRaw[0] ? householdsRaw[0].ownerId : null;
+
+  const activeHouseholdMembers: HouseholdMember[] = activeHouseholdMembersRaw
+    .flatMap(({ activeHousehold }) =>
+      activeHousehold?.usersWithActiveHousehold.map(({ createdAt, ...u }) => ({
+        ...u,
+        createdAt: createdAt.toISOString(),
+      }))
+    )
+    .filter((x) => x !== undefined);
 
   return {
     props: {
@@ -77,6 +141,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       activeHousehold: householdsRaw.find(
         ({ usersWithActiveHousehold }) => usersWithActiveHousehold.length > 0
       )?.id,
+      activeHouseholdMembers,
+      ownerId,
     },
   };
 }
@@ -85,84 +151,48 @@ export default function HouseholdsPage({
   user,
   households,
   activeHousehold,
+  activeHouseholdMembers,
+  ownerId,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLimitReached, setIsLimitReached] = useState(true);
+
+  useEffect(() => {
+    if (households.length < 5) {
+      setIsLimitReached(false);
+    } else {
+      setIsLimitReached(true);
+    }
+  }, [households]);
+
   return (
-    <main className="grid items-start flex-1 gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Households List */}
-        <HouseholdList
-          households={households}
-          activeHousehold={activeHousehold}
-        />
+    <HouseholdContext.Provider
+      value={{
+        isSubmitting,
+        setIsSubmitting,
+        isLimitReached,
+        setIsLimitReached,
+        ownerId,
+      }}
+    >
+      <main className="grid items-start flex-1 gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Households List */}
+          <HouseholdList
+            households={households}
+            activeHousehold={activeHousehold}
+          />
 
-        {/* Create Household */}
-        <HouseholdCreateForm />
+          {/* Create Household */}
+          <HouseholdCreateForm />
 
-        {/* Join Household */}
-        <HouseholdJoinForm />
-      </div>
+          {/* Join Household */}
+          <HouseholdJoinForm />
+        </div>
 
-      {/* Household Members */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">
-            Członkowie domostwa
-          </CardTitle>
-          <Button variant="outline" size="sm" className="gap-1">
-            <UserPlus className="w-4 h-4" />
-            Zaproś członka
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Imię i nazwisko</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="text-right">Akcje</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>John Smith</TableCell>
-                <TableCell>john@example.com</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <EllipsisIcon className="w-5 h-5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Jane Smith</TableCell>
-                <TableCell>jane@example.com</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <EllipsisIcon className="w-5 h-5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Johnny Smith</TableCell>
-                <TableCell>johnny@example.com</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <EllipsisIcon className="w-5 h-5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Janie Smith</TableCell>
-                <TableCell>janie@example.com</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <EllipsisIcon className="w-5 h-5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </main>
+        {/* Household Members */}
+        <HouseholdMembersList householdMembers={activeHouseholdMembers} />
+      </main>
+    </HouseholdContext.Provider>
   );
 }

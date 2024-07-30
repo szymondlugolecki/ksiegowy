@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
+import { useHouseholdContext } from "../context";
 
 interface HouseholdListRowProps {
   household: Pick<SelectHousehold, "id" | "name" | "invitationCode">;
@@ -34,6 +35,9 @@ export default function HouseholdListRow({
   household,
   active,
 }: HouseholdListRowProps) {
+  const { isLimitReached, isSubmitting, setIsSubmitting } =
+    useHouseholdContext();
+
   const router = useRouter();
   const form = useForm<ChangeActiveHouseholdForm>({
     resolver: zodResolver(changeActiveHouseholdFormSchema),
@@ -45,6 +49,7 @@ export default function HouseholdListRow({
   async function onSubmit(values: ChangeActiveHouseholdForm) {
     console.log("sending data", values);
 
+    setIsSubmitting(true);
     const response = await fetch("/api/households/activate", {
       method: "POST",
       body: JSON.stringify(values),
@@ -52,6 +57,7 @@ export default function HouseholdListRow({
 
     console.log("response", response);
     const data: ApiResponse = await response.json();
+    setIsSubmitting(false);
     console.log("data", data);
 
     if ("error" in data) {
@@ -92,7 +98,7 @@ export default function HouseholdListRow({
             </div>
           </div>
           {active ? null : (
-            <Button type="submit" variant="secondary">
+            <Button type="submit" variant="secondary" disabled={isSubmitting}>
               Aktywuj
             </Button>
           )}
