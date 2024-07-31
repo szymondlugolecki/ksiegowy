@@ -22,11 +22,18 @@ import {
   addExpenseFormSchema,
   type AddExpenseForm,
 } from "@/lib/schemas/expenses";
+import Spinner from "@/components/spinner";
 
 export default function AddExpenseForm({
   household,
+  isSubmitting,
+  setIsSubmitting,
+  setIsDrawerOpen,
 }: {
   household: HouseholdData;
+  isSubmitting: boolean;
+  setIsSubmitting: (isSubmitting: boolean) => void;
+  setIsDrawerOpen: (isDrawerOpen: boolean) => void;
 }) {
   const form = useForm<AddExpenseForm>({
     resolver: zodResolver(addExpenseFormSchema),
@@ -41,6 +48,7 @@ export default function AddExpenseForm({
   async function onSubmit(values: AddExpenseForm) {
     console.log("sending data", values);
 
+    setIsSubmitting(true);
     const response = await fetch("/api/expenses/add", {
       method: "POST",
       body: JSON.stringify(values),
@@ -48,10 +56,14 @@ export default function AddExpenseForm({
 
     console.log("response", response);
     const data: ApiResponse = await response.json();
+    setIsSubmitting(false);
     console.log("data", data);
 
     if ("error" in data) {
       toast.error(data.message);
+      return;
+    } else {
+      setIsDrawerOpen(false);
     }
     toast(data.message);
   }
@@ -69,7 +81,11 @@ export default function AddExpenseForm({
                 <RequiredAsterisk />
               </FormLabel>
               <FormControl>
-                <Input placeholder="Paliwo" {...field} />
+                <Input
+                  placeholder="Paliwo"
+                  {...field}
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormDescription>
                 Krótko opisz wydatek, np. Biedronka
@@ -89,7 +105,13 @@ export default function AddExpenseForm({
                 <RequiredAsterisk />
               </FormLabel>
               <FormControl>
-                <Input type="number" placeholder="0" step={0.01} {...field} />
+                <Input
+                  type="number"
+                  placeholder="0"
+                  step={0.01}
+                  disabled={isSubmitting}
+                  {...field}
+                />
               </FormControl>
               <FormDescription>Kwota w PLN</FormDescription>
               <FormMessage />
@@ -104,7 +126,7 @@ export default function AddExpenseForm({
             <FormItem>
               <FormLabel>Opis (opcjonalne)</FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Textarea {...field} disabled={isSubmitting} />
               </FormControl>
               <FormDescription>Dodatkowe szczegóły wydatku</FormDescription>
               <FormMessage />
@@ -127,8 +149,8 @@ export default function AddExpenseForm({
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Dodaj
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? <Spinner /> : "Dodaj"}
         </Button>
       </form>
     </Form>

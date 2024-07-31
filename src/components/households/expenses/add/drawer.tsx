@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/drawer";
 import AddExpenseForm from "./form";
 import { HouseholdData } from "@/lib/types";
+import { useState } from "react";
+import Spinner from "@/components/spinner";
 
 export default function AddExpenseDrawer({
   children,
@@ -20,11 +22,11 @@ export default function AddExpenseDrawer({
   children: React.ReactNode;
   household: HouseholdData;
 }) {
-  {
-    /* <Button variant="outline">Open Drawer</Button> */
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   return (
-    <Drawer>
+    <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
       <DrawerTrigger asChild>{children}</DrawerTrigger>
       <DrawerContent>
         <div className="w-full max-w-sm mx-auto">
@@ -35,12 +37,18 @@ export default function AddExpenseDrawer({
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4 pb-0">
-            <AddExpenseForm household={household} />
+            <AddExpenseForm
+              household={household}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+              setIsDrawerOpen={setIsDrawerOpen}
+            />
           </div>
           <DrawerFooter>
-            {/* <Button>Submit</Button> */}
             <DrawerClose asChild>
-              <Button variant="outline">Anuluj</Button>
+              <Button variant="outline" disabled={isSubmitting}>
+                Anuluj
+              </Button>
             </DrawerClose>
           </DrawerFooter>
         </div>

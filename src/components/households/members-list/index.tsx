@@ -11,11 +11,14 @@ import {
 import { HouseholdMember } from "@/pages/households";
 import { UserPlus } from "lucide-react";
 import HouseholdMembersTable from "./table";
+import InviteUserDialog from "./invite-user-dialog";
 
 export default function HouseholdMembersList({
   householdMembers,
+  invitationCode,
 }: {
   householdMembers: HouseholdMember[];
+  invitationCode: string | null;
 }) {
   return (
     <Card>
@@ -23,10 +26,14 @@ export default function HouseholdMembersList({
         <CardTitle className="text-sm font-medium">
           Członkowie domostwa
         </CardTitle>
-        <Button variant="outline" size="sm" className="gap-1">
-          <UserPlus className="w-4 h-4" />
-          Zaproś członka
-        </Button>
+        {invitationCode ? (
+          <InviteUserDialog invitationCode={invitationCode}>
+            <Button variant="outline" size="sm" className="gap-1">
+              <UserPlus className="w-4 h-4" />
+              Zaproś członka
+            </Button>
+          </InviteUserDialog>
+        ) : null}
       </CardHeader>
       <CardContent>
         <HouseholdMembersTable householdMembers={householdMembers} />

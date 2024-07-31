@@ -13,12 +13,11 @@ export default async function handler(
   const supabase = createClient(req, res);
   const { error, data: userData } = await supabase.auth.getUser();
   if (error) {
-    return res.status(401).json({ error: true, message: "Unauthorized" });
+    return res.status(401).json({ error: true, message: "Brak autoryzacji" });
   }
 
+  // Validation
   const body = JSON.parse(req.body);
-
-  console.log("body", body);
   const validation = addExpenseFormSchema.safeParse(body);
   if (!validation.success) {
     return res

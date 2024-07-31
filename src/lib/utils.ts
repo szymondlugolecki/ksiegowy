@@ -17,3 +17,10 @@ export const trytm = async <T>(
     throw throwable;
   }
 };
+
+export const parsePLN = (amount: number): string => {
+  return amount.toLocaleString("pl-PL", {
+    style: "currency",
+    currency: "PLN",
+  });
+};

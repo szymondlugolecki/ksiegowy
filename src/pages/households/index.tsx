@@ -84,7 +84,9 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
         where: eq(profilesTable.id, data.user.id),
         with: {
           activeHousehold: {
-            columns: {},
+            columns: {
+              invitationCode: true,
+            },
             with: {
               usersWithActiveHousehold: {
                 columns: {
@@ -123,7 +125,11 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     ({ usersWithActiveHousehold, ...rest }) => ({ ...rest })
   );
 
+  const activeHousehold = activeHouseholdMembersRaw[0].activeHousehold;
   const ownerId = householdsRaw[0] ? householdsRaw[0].ownerId : null;
+  const invitationCode = activeHousehold
+    ? activeHousehold.invitationCode
+    : null;
 
   const activeHouseholdMembers: HouseholdMember[] = activeHouseholdMembersRaw
     .flatMap(({ activeHousehold }) =>
@@ -143,6 +149,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       )?.id,
       activeHouseholdMembers,
       ownerId,
+      invitationCode,
     },
   };
 }
@@ -153,6 +160,7 @@ export default function HouseholdsPage({
   activeHousehold,
   activeHouseholdMembers,
   ownerId,
+  invitationCode,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLimitReached, setIsLimitReached] = useState(true);
@@ -191,7 +199,10 @@ export default function HouseholdsPage({
         </div>
 
         {/* Household Members */}
-        <HouseholdMembersList householdMembers={activeHouseholdMembers} />
+        <HouseholdMembersList
+          householdMembers={activeHouseholdMembers}
+          invitationCode={invitationCode}
+        />
       </main>
     </HouseholdContext.Provider>
   );

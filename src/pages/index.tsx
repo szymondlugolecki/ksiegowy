@@ -21,6 +21,13 @@ import type { User } from "lucia";
 import { createClient } from "@/lib/supabase/server-props";
 // import { AddExpenseDrawer } from "@/components/forms/expenses/add/drawer";
 import dynamic from "next/dynamic";
+import { parsePLN, trytm } from "@/lib/utils";
+import { db } from "@/lib/db";
+import { profilesTable } from "@/lib/db/tables/profiles";
+import { eq } from "drizzle-orm";
+import { redirect } from "next/dist/server/api-utils";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 const AddExpenseDrawer = dynamic(
   () => import("@/components/households/expenses/add/drawer"),
@@ -39,7 +46,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createClient(context);
 
   const { data, error } = await supabase.auth.getUser();
-
   // console.log("get user", data, error);
 
   if (error || !data) {
@@ -51,19 +57,93 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
+  const [userProfile, fetchUserProfileError] = await trytm(
+    db.query.profilesTable.findFirst({
+      columns: {},
+      where: eq(profilesTable.id, data.user.id),
+      with: {
+        activeHousehold: {
+          columns: {
+            id: true,
+            name: true,
+          },
+          with: {
+            expenses: {
+              columns: {
+                id: true,
+                amount: true,
+                title: true,
+                description: true,
+                createdAt: true,
+              },
+              with: {
+                user: {
+                  columns: {
+                    id: true,
+                    fullName: true,
+                    avatarURL: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  );
+
+  if (fetchUserProfileError) {
+    console.error("fetchUserProfileError", fetchUserProfileError);
+    throw new Error("Błąd serwera podczas pobierania profilu użytkownika");
+  }
+
+  if (!userProfile) {
+    console.error("userProfile", userProfile);
+    throw new Error("Nie znaleziono profilu użytkownika");
+  }
+
+  if (!userProfile.activeHousehold) {
+    console.error("active household not found", "redirecting to /households");
+    return {
+      redirect: {
+        destination: "/households",
+        permanent: false,
+      },
+    };
+  }
+
+  const expenses = userProfile.activeHousehold.expenses.map(
+    ({ createdAt, ...rest }) => ({
+      ...rest,
+      createdAt: createdAt && createdAt.toISOString(),
+    })
+  );
+  const household = {
+    id: userProfile.activeHousehold.id,
+    name: userProfile.activeHousehold.name,
+  };
+
   return {
     props: {
       user: data.user,
+      expenses,
+      household,
     },
   };
 }
 
 export default function HomePage({
   user,
+  expenses,
+  household,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const now = new Date();
   console.log(now);
   // console.log("user", user);
+
+  useEffect(() => {
+    toast("Wydatki zostały załadowane");
+  }, []);
 
   return (
     <main className="flex flex-col items-start flex-1 sm:px-6 sm:py-0 gap-y-4">
@@ -73,12 +153,7 @@ export default function HomePage({
           <CardTitle className="text-sm font-medium">
             Ostatnie wydatki
           </CardTitle>
-          <AddExpenseDrawer
-            household={{
-              id: "1",
-              name: "Długołęccy",
-            }}
-          >
+          <AddExpenseDrawer household={household}>
             <Button variant="outline" size="sm" className="gap-1">
               <PlusIcon className="w-4 h-4" />
               Dodaj wydatek
@@ -91,27 +166,34 @@ export default function HomePage({
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Nazwa</TableHead>
-                <TableHead>Opis</TableHead>
+                <TableHead>Dodał(a)</TableHead>
                 <TableHead className="text-right">Kwota</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell>
-                  <DateTooltip date={now} />
-                </TableCell>
-                <TableCell>Paliwo</TableCell>
-                <TableCell>Szymon</TableCell>
-                <TableCell className="text-right">87.34</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <DateTooltip date={now} />
-                </TableCell>{" "}
-                <TableCell>Biedronka</TableCell>
-                <TableCell>Zakupy na Wielkanoc</TableCell>
-                <TableCell className="text-right">45.23</TableCell>
-              </TableRow>
+              {expenses.map(
+                (
+                  { id, title, description, amount, user, createdAt },
+                  index
+                ) => {
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {createdAt ? (
+                          <DateTooltip date={new Date(createdAt)} />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>{title}</TableCell>
+                      <TableCell>{user.fullName.split(" ")[0]}</TableCell>
+                      <TableCell className="text-right">
+                        {parsePLN(amount)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+              )}
             </TableBody>
           </Table>
         </CardContent>
