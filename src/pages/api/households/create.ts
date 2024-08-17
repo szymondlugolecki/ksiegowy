@@ -12,18 +12,28 @@ import { trytm } from "@/lib/utils";
 import { count, eq } from "drizzle-orm";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+// This is used to a new create household
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
+  // Check request method
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: true,
+      message: "Nieprawidłowa metoda żądania",
+    });
+  }
+
+  // Handle auth
   const supabase = createClient(req, res);
   const { error, data: userData } = await supabase.auth.getUser();
   if (error) {
     return res.status(401).json({ error: true, message: "Unauthorized" });
   }
 
+  // Validation
   const body = JSON.parse(req.body);
-
   const validation = createHouseholdFormSchema.safeParse(body);
   if (!validation.success) {
     return res
@@ -40,13 +50,16 @@ export default async function handler(
     ownerId: userData.user.id,
   };
 
-  // Check if user is already a member of more than 5 households
+  // Here's a server-side check to see if user is already a member of more than 5 households:
+
+  // Count user's households
   const [userHouseholdsCount, countUserHouseholdsError] = await trytm(
     db
       .select({ count: count() })
       .from(profilesToHouseholdsTable)
       .where(eq(profilesToHouseholdsTable.userId, userData.user.id))
   );
+  // Handle errors
   if (countUserHouseholdsError) {
     console.error("countUserHouseholdsError", countUserHouseholdsError);
     return res.status(500).json({
@@ -54,13 +67,15 @@ export default async function handler(
       message: "Błąd serwera podczas sprawdzania liczby domostw",
     });
   }
-  if (userHouseholdsCount && userHouseholdsCount[0].count > 5) {
+  // Throw error if user is already a member of 5 households
+  if (userHouseholdsCount && userHouseholdsCount[0].count >= 5) {
     return res.status(400).json({
       error: true,
       message: "Można być członkiem maksymalnie 5 domostw",
     });
   }
 
+  // Create a new household
   const [, insertHouseholdError] = await trytm(
     db.transaction(async (txn) => {
       const createdHouseholds = await txn
@@ -90,6 +105,7 @@ export default async function handler(
       }
     })
   );
+  // Handle errors
   if (insertHouseholdError) {
     console.error("insertHouseholdError", insertHouseholdError);
     return res.status(500).json({
@@ -97,8 +113,6 @@ export default async function handler(
       message: "Błąd serwera podczas tworzenia domostwa",
     });
   }
-
-  // res.redirect(307, `/households`);
 
   res
     .status(200)

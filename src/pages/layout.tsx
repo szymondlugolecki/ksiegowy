@@ -3,6 +3,10 @@ import Sidebar from "../components/layout/sidebar";
 import { createContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/component";
 import { Session } from "@supabase/supabase-js";
+import {
+  ApiResponseActiveHousehold,
+  ActiveHousehold,
+} from "./api/households/active";
 
 export const SessionContext = createContext<Session | null>(null);
 

@@ -28,11 +28,11 @@ import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
 import { Badge } from "@/components/ui/badge";
 import { useContext } from "react";
-import { useHouseholdContext } from "../context";
+import { useHouseholdsPageContext } from "../households-page-context";
 
 export default function HouseholdJoinForm() {
   const { isLimitReached, isSubmitting, setIsSubmitting } =
-    useHouseholdContext();
+    useHouseholdsPageContext();
   const router = useRouter();
   const form = useForm<JoinHouseholdForm>({
     resolver: zodResolver(joinHouseholdFormSchema),

@@ -1,13 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DollarSign } from "lucide-react";
 
-const monthlyTotal = 2345.67;
-const formattedTotal = Intl.NumberFormat("pl", {
-  style: "currency",
-  currency: "PLN",
-}).format(monthlyTotal);
+const MonthlyExpensesCard = ({
+  monthlyExpensesTotal,
+}: {
+  monthlyExpensesTotal: number;
+}) => {
+  const formattedTotal = Intl.NumberFormat("pl", {
+    style: "currency",
+    currency: "PLN",
+  }).format(monthlyExpensesTotal);
 
-const MonthlyExpensesCard = () => {
   return (
     <Card className="w-full max-w-5xl">
       <CardHeader className="flex flex-row items-center justify-between pb-2">

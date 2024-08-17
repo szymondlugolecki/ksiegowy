@@ -8,7 +8,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, XCircleIcon } from "lucide-react";
 import MonthlyExpensesCard from "../components/monthly-expenses-card";
 import DateTooltip from "../components/tables/date-tooltip";
 
@@ -21,13 +21,17 @@ import type { User } from "lucia";
 import { createClient } from "@/lib/supabase/server-props";
 // import { AddExpenseDrawer } from "@/components/forms/expenses/add/drawer";
 import dynamic from "next/dynamic";
-import { parsePLN, trytm } from "@/lib/utils";
+import { formatPLN, trytm } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { profilesTable } from "@/lib/db/tables/profiles";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/dist/server/api-utils";
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { ActiveHousehold } from "./api/households/active";
+import { useActiveHousehold } from "@/hooks/useHousehold";
+import Spinner from "@/components/spinner";
 
 const AddExpenseDrawer = dynamic(
   () => import("@/components/households/expenses/add/drawer"),
@@ -43,11 +47,12 @@ const AddExpenseDrawer = dynamic(
 );
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
+  // Get user data/session
   const supabase = createClient(context);
-
   const { data, error } = await supabase.auth.getUser();
   // console.log("get user", data, error);
 
+  // Redirect to login if there's an error or no user data
   if (error || !data) {
     return {
       redirect: {
@@ -57,6 +62,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
+  // Fetch household data from the database
   const [userProfile, fetchUserProfileError] = await trytm(
     db.query.profilesTable.findFirst({
       columns: {},
@@ -66,6 +72,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
           columns: {
             id: true,
             name: true,
+            invitationCode: true,
+            ownerId: true,
           },
           with: {
             expenses: {
@@ -92,16 +100,17 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     })
   );
 
+  // Handle errors
   if (fetchUserProfileError) {
     console.error("fetchUserProfileError", fetchUserProfileError);
     throw new Error("Błąd serwera podczas pobierania profilu użytkownika");
   }
-
   if (!userProfile) {
     console.error("userProfile", userProfile);
     throw new Error("Nie znaleziono profilu użytkownika");
   }
 
+  // Redirect to /households if there's no active household
   if (!userProfile.activeHousehold) {
     console.error("active household not found", "redirecting to /households");
     return {
@@ -112,22 +121,31 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
+  const monthlyExpensesTotal = userProfile.activeHousehold.expenses.reduce(
+    (acc, expense) => acc + Number(expense.amount),
+    0
+  );
+
+  // Map expenses to a format that's easier to work with
   const expenses = userProfile.activeHousehold.expenses.map(
     ({ createdAt, ...rest }) => ({
       ...rest,
       createdAt: createdAt && createdAt.toISOString(),
     })
   );
-  const household = {
+  const household: ActiveHousehold = {
     id: userProfile.activeHousehold.id,
     name: userProfile.activeHousehold.name,
+    invitationCode: userProfile.activeHousehold.invitationCode,
+    ownerId: userProfile.activeHousehold.ownerId,
   };
 
   return {
     props: {
       user: data.user,
       expenses,
-      household,
+      initialHousehold: household,
+      monthlyExpensesTotal,
     },
   };
 }
@@ -135,30 +153,53 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 export default function HomePage({
   user,
   expenses,
-  household,
+  initialHousehold,
+  monthlyExpensesTotal,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const now = new Date();
-  console.log(now);
-  // console.log("user", user);
+  const activeHouseholdQueryData = useActiveHousehold(initialHousehold);
 
-  useEffect(() => {
-    toast("Wydatki zostały załadowane");
-  }, []);
+  const AddExpenseButton = () => {
+    const { data, isLoading, isError, isSuccess } = activeHouseholdQueryData;
+    if (isLoading) {
+      return (
+        <Button variant="outline" size="sm" className="gap-1" disabled>
+          <Spinner />
+        </Button>
+      );
+    }
+
+    if (isError) {
+      return (
+        <Button variant="outline" size="sm" className="gap-1" disabled>
+          <XCircleIcon className="w-4 h-4" />
+          Błąd serwera
+        </Button>
+      );
+    }
+
+    if (isSuccess) {
+      return (
+        <AddExpenseDrawer household={data}>
+          <Button variant="outline" size="sm" className="gap-1">
+            <PlusIcon className="w-4 h-4" />
+            Dodaj wydatek
+          </Button>
+        </AddExpenseDrawer>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <main className="flex flex-col items-start flex-1 sm:px-6 sm:py-0 gap-y-4">
-      <MonthlyExpensesCard />
+      <MonthlyExpensesCard monthlyExpensesTotal={monthlyExpensesTotal} />
       <Card className="w-full max-w-5xl">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">
             Ostatnie wydatki
           </CardTitle>
-          <AddExpenseDrawer household={household}>
-            <Button variant="outline" size="sm" className="gap-1">
-              <PlusIcon className="w-4 h-4" />
-              Dodaj wydatek
-            </Button>
-          </AddExpenseDrawer>
+          {AddExpenseButton()}
         </CardHeader>
         <CardContent>
           <Table>
@@ -188,7 +229,7 @@ export default function HomePage({
                       <TableCell>{title}</TableCell>
                       <TableCell>{user.fullName.split(" ")[0]}</TableCell>
                       <TableCell className="text-right">
-                        {parsePLN(amount)}
+                        {formatPLN(amount)}
                       </TableCell>
                     </TableRow>
                   );

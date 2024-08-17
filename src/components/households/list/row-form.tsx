@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
-import { useHouseholdContext } from "../context";
+import { useHouseholdsPageContext } from "../households-page-context";
 
 interface HouseholdListRowProps {
   household: Pick<SelectHousehold, "id" | "name" | "invitationCode">;
@@ -36,7 +36,9 @@ export default function HouseholdListRow({
   active,
 }: HouseholdListRowProps) {
   const { isLimitReached, isSubmitting, setIsSubmitting } =
-    useHouseholdContext();
+    useHouseholdsPageContext();
+
+  console.log("default value", "id", household.id);
 
   const router = useRouter();
   const form = useForm<ChangeActiveHouseholdForm>({

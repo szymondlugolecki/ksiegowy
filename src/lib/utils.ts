@@ -5,6 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// This is a nice way to catch errors without the bracket hell
 export const trytm = async <T>(
   promise: Promise<T>
 ): Promise<[T, null] | [null, Error]> => {
@@ -18,7 +19,8 @@ export const trytm = async <T>(
   }
 };
 
-export const parsePLN = (amount: number): string => {
+// Formats a number as the PLN currency
+export const formatPLN = (amount: number): string => {
   return amount.toLocaleString("pl-PL", {
     style: "currency",
     currency: "PLN",

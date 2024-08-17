@@ -17,14 +17,14 @@ import {
   PlusIcon,
   UserPlus,
 } from "lucide-react";
-import { useHouseholdContext } from "../context";
+import { useHouseholdsPageContext } from "../households-page-context";
 
 export default function HouseholdMembersTable({
   householdMembers,
 }: {
   householdMembers: HouseholdMember[];
 }) {
-  const { ownerId } = useHouseholdContext();
+  const { ownerId } = useHouseholdsPageContext();
 
   return (
     <Table>

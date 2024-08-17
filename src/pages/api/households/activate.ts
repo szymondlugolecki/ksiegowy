@@ -8,11 +8,20 @@ import { trytm } from "@/lib/utils";
 import { and, count, eq } from "drizzle-orm";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+// This is used to activate user's active household
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
-  // Auth
+  // Check request method
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: true,
+      message: "Nieprawidłowa metoda żądania",
+    });
+  }
+
+  // Handle auth
   const supabase = createClient(req, res);
   const { error, data: userData } = await supabase.auth.getUser();
   if (error) {
@@ -32,23 +41,6 @@ export default async function handler(
     data: { id },
   } = validation;
 
-  console.log(
-    "Members:",
-    await db.query.profilesToHouseholdsTable.findMany({
-      with: {
-        household: {
-          columns: {
-            name: true,
-          },
-        },
-        profile: {
-          columns: {
-            fullName: true,
-          },
-        },
-      },
-    })
-  );
   // Check if user is member of the household
   const [household, fetchHouseholdError] = await trytm(
     db.query.profilesToHouseholdsTable.findFirst({
@@ -66,10 +58,8 @@ export default async function handler(
     })
   );
 
+  // Handle errors
   if (fetchHouseholdError) {
-    //     fetchHouseholdError Error: There is not enough information to infer relation "householdsTable.members"
-    //     at normalizeRelation (file:///C:/Users/PC/Desktop/ksiegowy/node_modules/drizzle-orm/relations.js:250:9)
-    //  POST /api/households/join 500 in 163ms
     console.error("fetchHouseholdError", fetchHouseholdError);
     return res.status(500).json({
       error: true,
@@ -83,6 +73,7 @@ export default async function handler(
     });
   }
 
+  // Change user's active household
   const [, changeActiveHouseholdError] = await trytm(
     db
       .update(profilesTable)
@@ -91,6 +82,7 @@ export default async function handler(
       })
       .where(eq(profilesTable.id, userData.user.id))
   );
+  // Handle errors
   if (changeActiveHouseholdError) {
     console.error("changeActiveHouseholdError", changeActiveHouseholdError);
     return res.status(500).json({

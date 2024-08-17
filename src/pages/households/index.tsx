@@ -29,7 +29,7 @@ import HouseholdList from "@/components/households/list";
 import { eq, is } from "drizzle-orm";
 import { profilesTable } from "@/lib/db/tables/profiles";
 import { createContext, useContext, useEffect, useState } from "react";
-import { HouseholdContext } from "@/components/households/context";
+import { HouseholdsPageContext } from "@/components/households/households-page-context";
 import { profilesToHouseholdsTable } from "@/lib/db/tables/households";
 import { SelectUser } from "@/lib/db/tables/profiles";
 import HouseholdMembersList from "@/components/households/members-list";
@@ -42,9 +42,10 @@ export type HouseholdMember = Pick<
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createClient(context);
 
+  // Get user session
   const { data, error } = await supabase.auth.getUser();
-  // console.log("get user", data, error);
 
+  // Redirect to /login page if user is not logged in
   if (error || !data) {
     return {
       redirect: {
@@ -54,6 +55,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
+  // Get list of user'shouseholds
   const [householdsRaw, fetchHouseholdsError] = await trytm(
     db.query.householdsTable.findMany({
       columns: {
@@ -72,11 +74,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       },
     })
   );
+
+  // Handle errors
   if (fetchHouseholdsError) {
     console.error("fetchHouseholdsError", fetchHouseholdsError);
     throw new Error("Błąd serwera podczas pobierania listy domostw");
   }
 
+  // Get list of user's active household members
   const [activeHouseholdMembersRaw, fetchActiveHouseholdMembersError] =
     await trytm(
       db.query.profilesTable.findMany({
@@ -103,6 +108,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       })
     );
 
+  // Handle errors
   if (fetchActiveHouseholdMembersError) {
     console.error(
       "fetchActiveHouseholdMembersError",
@@ -174,7 +180,7 @@ export default function HouseholdsPage({
   }, [households]);
 
   return (
-    <HouseholdContext.Provider
+    <HouseholdsPageContext.Provider
       value={{
         isSubmitting,
         setIsSubmitting,
@@ -186,10 +192,7 @@ export default function HouseholdsPage({
       <main className="grid items-start flex-1 gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Households List */}
-          <HouseholdList
-            households={households}
-            activeHousehold={activeHousehold}
-          />
+          <HouseholdList households={households} />
 
           {/* Create Household */}
           <HouseholdCreateForm />
@@ -199,11 +202,8 @@ export default function HouseholdsPage({
         </div>
 
         {/* Household Members */}
-        <HouseholdMembersList
-          householdMembers={activeHouseholdMembers}
-          invitationCode={invitationCode}
-        />
+        <HouseholdMembersList householdMembers={activeHouseholdMembers} />
       </main>
-    </HouseholdContext.Provider>
+    </HouseholdsPageContext.Provider>
   );
 }

@@ -10,6 +10,15 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
+  // Check request method
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: true,
+      message: "Nieprawidłowa metoda żądania",
+    });
+  }
+
+  // Handle auth
   const supabase = createClient(req, res);
   const { error, data: userData } = await supabase.auth.getUser();
   if (error) {
@@ -37,9 +46,11 @@ export default async function handler(
     profileId: userData.user.id,
   };
 
+  // Create expense
   const [, insertExpenseError] = await trytm(
     db.insert(expensesTable).values(newExpense)
   );
+  // Handle errors
   if (insertExpenseError) {
     console.error("insertExpenseError", insertExpenseError);
     return res.status(500).json({

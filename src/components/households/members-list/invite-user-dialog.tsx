@@ -11,14 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ActiveHousehold } from "@/pages/api/households/active";
 import { Copy } from "lucide-react";
 
 export default function InviteUserDialog({
-  invitationCode,
   children,
+  activeHousehold: household,
 }: {
-  invitationCode: string;
   children: React.ReactNode;
+  activeHousehold: ActiveHousehold;
 }) {
   return (
     <Dialog>
@@ -38,14 +39,18 @@ export default function InviteUserDialog({
             <Label htmlFor="invitationCode" className="sr-only">
               Kod zaproszenia
             </Label>
-            <Input id="invitationCode" defaultValue={invitationCode} readOnly />
+            <Input
+              id="invitationCode"
+              defaultValue={household.invitationCode}
+              readOnly
+            />
           </div>
           <Button
             type="submit"
             size="sm"
             className="px-3"
             onClick={() => {
-              navigator.clipboard.writeText(invitationCode);
+              navigator.clipboard.writeText(household.invitationCode);
             }}
           >
             <span className="sr-only">Skopiuj</span>
