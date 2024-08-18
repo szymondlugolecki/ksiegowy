@@ -17,7 +17,6 @@ import type {
   GetServerSidePropsResult,
   InferGetServerSidePropsType,
 } from "next";
-import type { User } from "lucia";
 import { createClient } from "@/lib/supabase/server-props";
 // import { AddExpenseDrawer } from "@/components/forms/expenses/add/drawer";
 import dynamic from "next/dynamic";
