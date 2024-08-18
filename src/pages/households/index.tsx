@@ -117,25 +117,25 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     throw new Error("Błąd serwera podczas pobierania listy członków domostwa");
   }
 
-  const x =
-    activeHouseholdMembersRaw[0].activeHousehold?.usersWithActiveHousehold[0]
-      .createdAt;
-  console.log(
-    "activeHouseholdMembersRaw",
-    activeHouseholdMembersRaw,
-    x,
-    typeof x
-  );
+  // const x =
+  //   activeHouseholdMembersRaw[0].activeHousehold?.usersWithActiveHousehold[0]
+  //     .createdAt;
+  // console.log(
+  //   "activeHouseholdMembersRaw",
+  //   activeHouseholdMembersRaw,
+  //   x,
+  //   typeof x
+  // );
 
   const households = householdsRaw.map(
     ({ usersWithActiveHousehold, ...rest }) => ({ ...rest })
   );
 
-  const activeHousehold = activeHouseholdMembersRaw[0].activeHousehold;
+  // const activeHousehold = activeHouseholdMembersRaw[0].activeHousehold;
   const ownerId = householdsRaw[0] ? householdsRaw[0].ownerId : null;
-  const invitationCode = activeHousehold
-    ? activeHousehold.invitationCode
-    : null;
+  // const invitationCode = activeHousehold
+  //   ? activeHousehold.invitationCode
+  //   : null;
 
   const activeHouseholdMembers: HouseholdMember[] = activeHouseholdMembersRaw
     .flatMap(({ activeHousehold }) =>
@@ -148,26 +148,26 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   return {
     props: {
-      user: data.user,
       households,
-      activeHousehold: householdsRaw.find(
-        ({ usersWithActiveHousehold }) => usersWithActiveHousehold.length > 0
-      )?.id,
       activeHouseholdMembers,
       ownerId,
-      invitationCode,
+      // activeHousehold: householdsRaw.find(
+      //   ({ usersWithActiveHousehold }) => usersWithActiveHousehold.length > 0
+      // )?.id,
+      // user: data.user,
+      // invitationCode,
     },
   };
 }
 
 export default function HouseholdsPage({
-  user,
   households,
-  activeHousehold,
   activeHouseholdMembers,
   ownerId,
-  invitationCode,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: // activeHousehold,
+// user,
+// invitationCode,
+InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLimitReached, setIsLimitReached] = useState(true);
 
@@ -182,8 +182,6 @@ export default function HouseholdsPage({
   return (
     <HouseholdsPageContext.Provider
       value={{
-        isSubmitting,
-        setIsSubmitting,
         isLimitReached,
         setIsLimitReached,
         ownerId,

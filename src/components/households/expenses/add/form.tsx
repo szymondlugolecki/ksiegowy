@@ -16,25 +16,28 @@ import {
 import { Input } from "@/components/ui/input";
 
 import RequiredAsterisk from "@/components/required-asterisk";
-import { ApiResponse, HouseholdData } from "@/lib/types";
+import { ApiResponse, ApiSuccessResponse, HouseholdData } from "@/lib/types";
 import { toast } from "sonner";
 import {
   addExpenseFormSchema,
   type AddExpenseForm,
 } from "@/lib/schemas/expenses";
 import Spinner from "@/components/spinner";
+import { useAppContext } from "@/components/app-context";
+import ky from "ky";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/router";
 
 export default function AddExpenseForm({
   household,
-  isSubmitting,
-  setIsSubmitting,
   setIsDrawerOpen,
 }: {
   household: HouseholdData;
-  isSubmitting: boolean;
-  setIsSubmitting: (isSubmitting: boolean) => void;
   setIsDrawerOpen: (isDrawerOpen: boolean) => void;
 }) {
+  const { isSubmitting, setIsSubmitting, setIsRefreshing } = useAppContext();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const form = useForm<AddExpenseForm>({
     resolver: zodResolver(addExpenseFormSchema),
     defaultValues: {
@@ -45,8 +48,30 @@ export default function AddExpenseForm({
     },
   });
 
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await router.replace(router.asPath);
+    setIsRefreshing(false);
+  };
+
   async function onSubmit(values: AddExpenseForm) {
     console.log("sending data", values);
+
+    setIsSubmitting(true);
+    ky.post("/api/expenses/add", { json: values })
+      .json<ApiSuccessResponse>()
+      .then(async (data) => {
+        console.log("data", data);
+        await refreshData();
+        toast(data.message);
+      })
+      .catch((error) => {
+        console.error(error);
+        toast.error("Wystąpił błąd: " + error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
 
     setIsSubmitting(true);
     const response = await fetch("/api/expenses/add", {

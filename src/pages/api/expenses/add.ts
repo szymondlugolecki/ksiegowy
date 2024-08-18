@@ -26,8 +26,7 @@ export default async function handler(
   }
 
   // Validation
-  const body = JSON.parse(req.body);
-  const validation = addExpenseFormSchema.safeParse(body);
+  const validation = addExpenseFormSchema.safeParse(req.body);
   if (!validation.success) {
     return res
       .status(400)

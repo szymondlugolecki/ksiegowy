@@ -3,12 +3,22 @@ import { SelectHousehold } from "@/lib/db/tables/households";
 
 import HouseholdListRow from "./row-form";
 import { useActiveHousehold } from "@/hooks/useHousehold";
+import HouseholdDeleteForm from "./delete-form";
+import { createClient } from "@/lib/supabase/component";
+import { useContext } from "react";
+import { SessionContext, useSessionContext } from "@/pages/layout";
+import { DeleteHouseholdDialog } from "./delete-dialog";
 
 interface HouseholdListProps {
-  households: Pick<SelectHousehold, "id" | "name" | "invitationCode">[];
+  households: Pick<
+    SelectHousehold,
+    "id" | "name" | "invitationCode" | "ownerId"
+  >[];
 }
 
 export default function HouseholdList({ households }: HouseholdListProps) {
+  const session = useSessionContext();
+
   const {
     data: activeHousehold,
     isLoading,
@@ -35,11 +45,18 @@ export default function HouseholdList({ households }: HouseholdListProps) {
         </CardHeader>
         <CardContent className="h-48 overflow-y-auto">
           {households.map((household, index) => (
-            <HouseholdListRow
-              household={household}
-              key={index}
-              active={!!activeHousehold && household.id === activeHousehold.id}
-            />
+            <div className="flex items-end gap-x-1" key={index}>
+              <HouseholdListRow
+                household={household}
+                active={
+                  !!activeHousehold && household.id === activeHousehold.id
+                }
+              />
+              {session?.user.id === household.ownerId}
+              <DeleteHouseholdDialog>
+                <HouseholdDeleteForm householdId={household.id} />
+              </DeleteHouseholdDialog>
+            </div>
           ))}
         </CardContent>
       </Card>

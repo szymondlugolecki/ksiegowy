@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { HomeIcon, RefreshCcw } from "lucide-react";
+import { HomeIcon, TrashIcon } from "lucide-react";
 import { SelectHousehold } from "@/lib/db/tables/households";
 
 import { useForm } from "react-hook-form";
@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ChangeActiveHouseholdForm,
   changeActiveHouseholdFormSchema,
+  DeleteHouseholdForm,
+  deleteHouseholdFormSchema,
 } from "@/lib/schemas/households";
 import { ApiResponse, ApiSuccessResponse } from "@/lib/types";
 import { toast } from "sonner";
@@ -28,23 +30,23 @@ import { useHouseholdsPageContext } from "../households-page-context";
 import { useAppContext } from "@/components/app-context";
 import ky from "ky";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertDialogAction } from "@/components/ui/alert-dialog";
 
 interface HouseholdListRowProps {
-  household: Pick<SelectHousehold, "id" | "name" | "invitationCode">;
-  active: boolean;
+  householdId: SelectHousehold["id"];
 }
 
-export default function HouseholdListRow({
-  household,
-  active,
+export default function HouseholdDeleteForm({
+  householdId,
 }: HouseholdListRowProps) {
-  const { isSubmitting, setIsSubmitting, setIsRefreshing } = useAppContext();
+  const { isSubmitting, setIsSubmitting, setIsRefreshing, isRefreshing } =
+    useAppContext();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const form = useForm<ChangeActiveHouseholdForm>({
-    resolver: zodResolver(changeActiveHouseholdFormSchema),
+  const form = useForm<DeleteHouseholdForm>({
+    resolver: zodResolver(deleteHouseholdFormSchema),
     defaultValues: {
-      id: household.id,
+      id: householdId,
     },
   });
 
@@ -57,12 +59,14 @@ export default function HouseholdListRow({
     setIsRefreshing(false);
   };
 
-  async function onSubmit(values: ChangeActiveHouseholdForm) {
+  const disabled = isSubmitting || isRefreshing;
+
+  async function onSubmit(values: DeleteHouseholdForm) {
     console.log("sending data", values);
 
     setIsSubmitting(true);
 
-    ky.post("/api/households/activate", { json: values })
+    ky.delete("/api/households/delete", { json: values })
       .json<ApiSuccessResponse>()
       .then(async (data) => {
         console.log("data", data);
@@ -82,7 +86,7 @@ export default function HouseholdListRow({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 bg-card grow"
+        className="flex flex-col bg-card"
       >
         <FormField
           control={form.control}
@@ -97,27 +101,13 @@ export default function HouseholdListRow({
           )}
         />
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <HomeIcon className="w-5 h-5" />
-            <div>
-              <div className="font-medium">{household.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {household.invitationCode}
-              </div>
-            </div>
-          </div>
-          {active ? null : (
-            <Button
-              type="submit"
-              variant="secondary"
-              size="icon"
-              disabled={isSubmitting}
-            >
-              <RefreshCcw className="w-5 h-5" />
-            </Button>
-          )}
-        </div>
+        <AlertDialogAction
+          className="bg-red-500"
+          disabled={disabled}
+          type="submit"
+        >
+          USUŃ
+        </AlertDialogAction>
       </form>
     </Form>
   );

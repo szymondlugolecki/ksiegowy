@@ -14,6 +14,7 @@ import AddExpenseForm from "./form";
 import { HouseholdData } from "@/lib/types";
 import { useState } from "react";
 import Spinner from "@/components/spinner";
+import { useAppContext } from "@/components/app-context";
 
 export default function AddExpenseDrawer({
   children,
@@ -22,7 +23,7 @@ export default function AddExpenseDrawer({
   children: React.ReactNode;
   household: HouseholdData;
 }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isSubmitting } = useAppContext();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
@@ -39,8 +40,6 @@ export default function AddExpenseDrawer({
           <div className="p-4 pb-0">
             <AddExpenseForm
               household={household}
-              isSubmitting={isSubmitting}
-              setIsSubmitting={setIsSubmitting}
               setIsDrawerOpen={setIsDrawerOpen}
             />
           </div>

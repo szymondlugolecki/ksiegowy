@@ -13,7 +13,7 @@ import {
   CreateHouseholdForm,
   createHouseholdFormSchema,
 } from "@/lib/schemas/households";
-import { ApiResponse } from "@/lib/types";
+import { ApiResponse, ApiSuccessResponse } from "@/lib/types";
 import { toast } from "sonner";
 import {
   Form,
@@ -28,11 +28,21 @@ import RequiredAsterisk from "@/components/required-asterisk";
 import { useRouter } from "next/router";
 import { Badge } from "@/components/ui/badge";
 import { useHouseholdsPageContext } from "../households-page-context";
+import { useAppContext } from "@/components/app-context";
+import { useEffect } from "react";
+import ky from "ky";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function HouseholdCreateForm() {
-  const { isLimitReached, isSubmitting, setIsSubmitting } =
-    useHouseholdsPageContext();
+  const { isLimitReached } = useHouseholdsPageContext();
+  const { setIsRefreshing, isSubmitting, setIsSubmitting } = useAppContext();
+  const queryClient = useQueryClient();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsRefreshing(false);
+  }, []);
+
   const form = useForm<CreateHouseholdForm>({
     resolver: zodResolver(createHouseholdFormSchema),
     defaultValues: {
@@ -42,33 +52,36 @@ export default function HouseholdCreateForm() {
 
   const disabled = isSubmitting || isLimitReached;
 
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await router.replace(router.asPath);
+    setIsRefreshing(false)
+  };
+
   async function onSubmit(values: CreateHouseholdForm) {
     console.log("sending data", values);
     setIsSubmitting(true);
-    const response = await fetch("/api/households/create", {
-      method: "POST",
-      body: JSON.stringify(values),
-    });
-    console.log("response", response);
-    const data: ApiResponse = await response.json();
-    setIsSubmitting(false);
-    console.log("data", data);
-
-    if ("error" in data) {
-      toast.error(data.message);
-    }
-
-    router.reload();
-    toast(data.message);
+    ky.post("/api/households/create", { json: values })
+      .json<ApiSuccessResponse>()
+      .then(async (data) => {
+        console.log("data", data);
+        await refreshData();
+        toast(data.message);
+      })
+      .catch((error) => {
+        console.error(error);
+        toast.error("Wystąpił błąd: " + error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium">Stwórz domostwo</CardTitle>
-        {isLimitReached && (
-          <Badge variant="destructive">LIMIT DOMOSTW: 5</Badge>
-        )}
+        {isLimitReached && <Badge variant="destructive">LIMIT: 5</Badge>}
       </CardHeader>
       <CardContent>
         <Form {...form}>

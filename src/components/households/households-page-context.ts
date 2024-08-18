@@ -1,8 +1,6 @@
 import { createContext, useContext } from "react";
 
 interface HouseholdsPageContext {
-  isSubmitting: boolean;
-  setIsSubmitting: (isSubmitting: boolean) => void;
   isLimitReached: boolean;
   setIsLimitReached: (isLimitReached: boolean) => void;
   ownerId: string | null;

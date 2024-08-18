@@ -36,8 +36,7 @@ export default async function handler(
   }
 
   // Validation
-  const body = JSON.parse(req.body);
-  const validation = joinHouseholdFormSchema.safeParse(body);
+  const validation = joinHouseholdFormSchema.safeParse(req.body);
   if (!validation.success) {
     return res
       .status(400)

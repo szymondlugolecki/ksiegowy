@@ -1,20 +1,26 @@
 import { db } from "@/lib/db";
-import { profilesToHouseholdsTable } from "@/lib/db/tables/households";
+import {
+  householdsTable,
+  profilesToHouseholdsTable,
+} from "@/lib/db/tables/households";
 import { profilesTable } from "@/lib/db/tables/profiles";
-import { changeActiveHouseholdFormSchema } from "@/lib/schemas/households";
+import {
+  changeActiveHouseholdFormSchema,
+  deleteHouseholdFormSchema,
+} from "@/lib/schemas/households";
 import createClient from "@/lib/supabase/api";
 import { ApiResponse } from "@/lib/types";
 import { trytm } from "@/lib/utils";
 import { and, count, eq } from "drizzle-orm";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// This is used to activate user's active household
+// This is used to remove a household
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
   // Check request method
-  if (req.method !== "POST") {
+  if (req.method !== "DELETE") {
     return res.status(405).json({
       error: true,
       message: "Nieprawidłowa metoda żądania",
@@ -30,8 +36,7 @@ export default async function handler(
 
   // Validation
   console.log("body", req.body);
-
-  const validation = changeActiveHouseholdFormSchema.safeParse(req.body);
+  const validation = deleteHouseholdFormSchema.safeParse(req.body);
   if (!validation.success) {
     return res
       .status(400)
@@ -53,6 +58,7 @@ export default async function handler(
         household: {
           columns: {
             name: true,
+            ownerId: true,
           },
         },
       },
@@ -70,30 +76,34 @@ export default async function handler(
   if (!household) {
     return res.status(404).json({
       error: true,
-      message: "Nie jesteś członkiem tego domostwa",
+      message: "Nie znaleziono domostwa",
     });
   }
 
-  // Change user's active household
-  const [, changeActiveHouseholdError] = await trytm(
-    db
-      .update(profilesTable)
-      .set({
-        mainHouseholdId: id,
-      })
-      .where(eq(profilesTable.id, userData.user.id))
+  // Check if user is owner of the household
+  if (userData.user.id !== household.household.ownerId) {
+    return res.status(403).json({
+      error: true,
+      message: "Musisz być właścicielem domostwa, aby je usunąć",
+    });
+  }
+
+  // Delete household
+  const [, deleteHouseholdError] = await trytm(
+    db.delete(householdsTable).where(eq(householdsTable.id, id))
   );
+
   // Handle errors
-  if (changeActiveHouseholdError) {
-    console.error("changeActiveHouseholdError", changeActiveHouseholdError);
+  if (deleteHouseholdError) {
+    console.error("deleteHouseholdError", deleteHouseholdError);
     return res.status(500).json({
       error: true,
-      message: "Błąd serwera podczas zmieniania aktywnego domostwa",
+      message: "Błąd serwera podczas usuwania domostwa",
     });
   }
 
   res.status(200).json({
     success: true,
-    message: `Zmieniono aktywne domostwo na ${household.household.name}`,
+    message: `Usunięto domostwo ${household.household.name}`,
   });
 }

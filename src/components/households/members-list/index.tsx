@@ -19,42 +19,22 @@ export default function HouseholdMembersList({
 }: {
   householdMembers: HouseholdMember[];
 }) {
-  const {
-    data: activeHousehold,
-    isError,
-    isLoading,
-    isSuccess,
-    error,
-  } = useActiveHousehold();
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (isError) {
-    return <span>Błąd: {error.message}</span>;
-  }
-
-  if (isSuccess) {
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">
-            Członkowie domostwa
-          </CardTitle>
-          {activeHousehold ? (
-            <InviteUserDialog activeHousehold={activeHousehold}>
-              <Button variant="outline" size="sm" className="gap-1">
-                <UserPlus className="w-4 h-4" />
-                Zaproś członka
-              </Button>
-            </InviteUserDialog>
-          ) : null}
-        </CardHeader>
-        <CardContent>
-          <HouseholdMembersTable householdMembers={householdMembers} />
-        </CardContent>
-      </Card>
-    );
-  }
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">
+          Członkowie domostwa
+        </CardTitle>
+        <InviteUserDialog>
+          <Button variant="outline" size="sm" className="gap-1">
+            <UserPlus className="w-4 h-4" />
+            Zaproś członka
+          </Button>
+        </InviteUserDialog>
+      </CardHeader>
+      <CardContent>
+        <HouseholdMembersTable householdMembers={householdMembers} />
+      </CardContent>
+    </Card>
+  );
 }

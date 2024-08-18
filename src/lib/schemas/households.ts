@@ -27,8 +27,18 @@ export const changeActiveHouseholdFormSchema = z.object({
     .uuid("Nieprawidłowe id domostwa"),
 });
 
+export const deleteHouseholdFormSchema = z.object({
+  id: z
+    .string({
+      required_error: "Id domostwa jest wymagane",
+      invalid_type_error: "Nieprawidłowe id domostwa",
+    })
+    .uuid("Nieprawidłowe id domostwa"),
+});
+
 export type CreateHouseholdForm = z.infer<typeof createHouseholdFormSchema>;
 export type JoinHouseholdForm = z.infer<typeof joinHouseholdFormSchema>;
 export type ChangeActiveHouseholdForm = z.infer<
   typeof changeActiveHouseholdFormSchema
 >;
+export type DeleteHouseholdForm = z.infer<typeof deleteHouseholdFormSchema>;

@@ -13,7 +13,7 @@ import {
   JoinHouseholdForm,
   joinHouseholdFormSchema,
 } from "@/lib/schemas/households";
-import { ApiResponse } from "@/lib/types";
+import { ApiResponse, ApiSuccessResponse } from "@/lib/types";
 import { toast } from "sonner";
 import {
   Form,
@@ -29,10 +29,12 @@ import { useRouter } from "next/router";
 import { Badge } from "@/components/ui/badge";
 import { useContext } from "react";
 import { useHouseholdsPageContext } from "../households-page-context";
+import { useAppContext } from "@/components/app-context";
+import ky from "ky";
 
 export default function HouseholdJoinForm() {
-  const { isLimitReached, isSubmitting, setIsSubmitting } =
-    useHouseholdsPageContext();
+  const { isSubmitting, setIsSubmitting, setIsRefreshing } = useAppContext();
+  const { isLimitReached } = useHouseholdsPageContext();
   const router = useRouter();
   const form = useForm<JoinHouseholdForm>({
     resolver: zodResolver(joinHouseholdFormSchema),
@@ -43,26 +45,30 @@ export default function HouseholdJoinForm() {
 
   const disabled = isSubmitting || isLimitReached;
 
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await router.replace(router.asPath);
+    setIsRefreshing(false);
+  };
+
   async function onSubmit(values: JoinHouseholdForm) {
     console.log("sending data", values);
 
     setIsSubmitting(true);
-    const response = await fetch("/api/households/join", {
-      method: "POST",
-      body: JSON.stringify(values),
-    });
-
-    console.log("response", response);
-    const data: ApiResponse = await response.json();
-    setIsSubmitting(false);
-    console.log("data", data);
-
-    if ("error" in data) {
-      toast.error(data.message);
-    }
-
-    router.reload();
-    toast(data.message);
+    ky.post("/api/households/join", { json: values })
+      .json<ApiSuccessResponse>()
+      .then(async (data) => {
+        console.log("data", data);
+        await refreshData();
+        toast(data.message);
+      })
+      .catch((error) => {
+        console.error(error);
+        toast.error("Wystąpił błąd: " + error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   }
 
   return (
@@ -71,9 +77,7 @@ export default function HouseholdJoinForm() {
         <CardTitle className="text-sm font-medium">
           Dołącz do domostwa
         </CardTitle>
-        {isLimitReached && (
-          <Badge variant="destructive">LIMIT DOMOSTW: 5</Badge>
-        )}
+        {isLimitReached && <Badge variant="destructive">LIMIT: 5</Badge>}
       </CardHeader>
       <CardContent>
         <Form {...form}>

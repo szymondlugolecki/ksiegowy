@@ -2,13 +2,13 @@ import { createClient } from "@/lib/supabase/component";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useContext } from "react";
-import { SessionContext } from "../layout";
+import { SessionContext, useSessionContext } from "../layout";
 
 const redirectTo =
   process.env.NEXT_PUBLIC_BASE_URL + "/api/auth/callback/google";
 
 export default function LoginPage() {
-  const session = useContext(SessionContext);
+  const session = useSessionContext();
   console.log("client session", session);
 
   const supabase = createClient();
